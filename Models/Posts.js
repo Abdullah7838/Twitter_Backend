@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const PostSchema = new mongoose.Schema(
   {
     email: {
-      type: String, 
+      type: String,
       required: true,
     },
     post: {
@@ -12,11 +12,24 @@ const PostSchema = new mongoose.Schema(
     },
     postedAt: {
       type: Date,
-      default: Date.now, 
+      default: Date.now,
+    },
+    likes: {
+      type: [String], 
+      default: [],
+    },
+    comments: {
+      type: [
+        {
+          email: { type: String, required: true },
+          comment: { type: String, required: true },
+        }
+      ], 
+      default: [],
     },
   },
   {
-    timestamps: true, 
+    timestamps: true,
   }
 );
 
