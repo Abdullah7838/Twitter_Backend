@@ -1,0 +1,21 @@
+const express = require('express')
+const cors = require('cors');
+const bodyParser = require('body-parser');
+const app = express();
+app.use(cors());
+app.use(bodyParser.json());
+const db = require('./db')
+
+const userRoute = require('./Routes/userRoute');
+app.use('/api',userRoute);
+
+const postRoute = require('./Routes/postRoute');
+app.use('/api',postRoute);
+
+app.get('/', (req, res) => {
+    res.send('Hello World');
+  });
+
+app.listen(3001, () => {
+    console.log('Server is running on http://localhost:3001');
+  });
