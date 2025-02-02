@@ -6,6 +6,8 @@ const cloudinary = require('../cloudinary');
 const { findOne } = require('../models/Posts');
 const router = express.Router();
 const JWT_SECRET = "your_jwt_secret_key";
+const Post = require("../models/Posts"); 
+
 
 router.post("/upload-profile", async (req, res) => {
     try {
@@ -193,4 +195,27 @@ router.get('/admin',async(req,res)=>{
     }
 });
 
+router.delete("/users/:id", async (req, res) => {
+    const { id } = req.params;
+  
+    try {
+      const user = await User.findById(id);
+  
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      await Post.deleteMany({ email: user.email });
+      const deletedUser = await User.findByIdAndDelete(id);
+      if (!deletedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      const users = await User.find();
+      res.status(200).json({ message: "User and their posts deleted successfully", users });
+    } catch (error) {
+      console.error("Error deleting user and posts:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+  
+  
 module.exports = router;
