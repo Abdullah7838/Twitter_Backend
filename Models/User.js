@@ -9,6 +9,14 @@ const UserSchema = mongoose.Schema({
         type:String,
         required:true
     },
+    followers: {
+        type: [String], 
+        default: []
+    },
+    profilePhoto:{
+        type:String,
+        default:'https://res.cloudinary.com/dbfyj6zg0/image/upload/v1738299292/profilepic_fwvypn.png',
+    },
     
 },{
         timestamps: true, 

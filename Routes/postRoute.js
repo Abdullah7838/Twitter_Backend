@@ -42,14 +42,12 @@ router.get("/post", async (req, res) => {
     const { id } = req.params;  // Get the post ID from the request parameters
   
     try {
-      // Find the post by ID
       const post = await Post.findById(id);
   
       if (!post) {
         return res.status(404).json({ message: "Post not found" });
       }
   
-      // Return the post's data
       res.status(200).json({ message: "Post retrieved successfully", post });
     } catch (error) {
       console.error(error);
