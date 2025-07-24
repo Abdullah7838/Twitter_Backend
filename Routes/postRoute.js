@@ -39,7 +39,7 @@ router.get("/post", async (req, res) => {
   });
 
   router.get('/post/:id', async (req, res) => {
-    const { id } = req.params;  // Get the post ID from the request parameters
+    const { id } = req.params; 
   
     try {
       const post = await Post.findById(id);
@@ -177,7 +177,7 @@ router.get('/comments/:id', async (req, res) => {
       return res.status(404).json({ error: "Post not found" });
     }
 
-    res.status(200).json({ comments: post.comments });
+    res.status(200).json({ comments: post.comments,email:post.email });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Server error" });
