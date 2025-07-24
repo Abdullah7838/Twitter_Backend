@@ -3,6 +3,13 @@ const mongoose = require('mongoose');
 const CommentSchema = new mongoose.Schema(
   {
     email: { type: String, required: true },
+    username: { 
+      type: String,
+      default: function() {
+        // Default to email username part if not provided
+        return this.email ? this.email.split('@')[0] : '';
+      }
+    },
     comment: { type: String, required: true },
   },
   { timestamps: true }
@@ -13,6 +20,13 @@ const PostSchema = new mongoose.Schema(
     email: {
       type: String,
       required: true,
+    },
+    username: {
+      type: String,
+      default: function() {
+        // Default to email username part if not provided
+        return this.email ? this.email.split('@')[0] : '';
+      }
     },
     post: {
       type: String,
@@ -28,6 +42,10 @@ const PostSchema = new mongoose.Schema(
     },
     comments: {
       type: [CommentSchema],
+      default: [],
+    },
+    hashtags: {
+      type: [String],
       default: [],
     },
   },

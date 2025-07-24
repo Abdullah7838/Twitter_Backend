@@ -12,6 +12,9 @@ app.use('/api',userRoute);
 const postRoute = require('./Routes/postRoute');
 app.use('/api',postRoute);
 
+const passwordRoute = require('./Routes/passwordRoute');
+app.use('/api',passwordRoute);
+
 app.get('/', (req, res) => {
     res.send('Hello World');
   });

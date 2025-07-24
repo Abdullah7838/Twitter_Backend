@@ -7,13 +7,27 @@ const router = express.Router();
 
 router.post("/post", async (req, res) => {
   try {
-    const { email, post } = req.body;
+    const { email, post, username } = req.body;
 
     if (!email || !post) {
       return res.status(400).json({ message: "Email and post content are required" });
     }
 
-    const newPost = new Post({ email, post });
+    // Extract hashtags from post content
+    const hashtags = [];
+    const hashtagRegex = /#(\w+)/g;
+    let match;
+    
+    while ((match = hashtagRegex.exec(post)) !== null) {
+      hashtags.push(match[1].toLowerCase());
+    }
+
+    const newPost = new Post({ 
+      email, 
+      post, 
+      hashtags,
+      username: username || email.split('@')[0] // Use provided username or default to email
+    });
     await newPost.save();
 
     res.status(201).json({ message: "Post created successfully", post: newPost });
@@ -25,7 +39,15 @@ router.post("/post", async (req, res) => {
 
 router.get("/post", async (req, res) => {
     try {
-      const posts = await Post.find();
+      const { hashtag } = req.query;
+      let query = {};
+      
+      // If hashtag is provided, filter posts by that hashtag
+      if (hashtag) {
+        query = { hashtags: hashtag.toLowerCase() };
+      }
+      
+      const posts = await Post.find(query);
   
       if (posts.length === 0) {
         return res.status(404).json({ message: "No posts found" }); 
@@ -141,28 +163,31 @@ router.get('/all-likes', async (req, res) => {
 });
 
 router.post('/comments/:id', async (req, res) => {
-  const { id } = req.params;
-  const { email, comment } = req.body;  
-
-  if (!email || !comment) {
-    return res.status(400).json({ error: "Email and comment are required" });
-  }
-
   try {
+    const { id } = req.params;
+    const { email, comment, username } = req.body;
+
+    if (!email || !comment) {
+      return res.status(400).json({ message: "Email and comment are required" });
+    }
+
     const post = await Post.findById(id);
 
     if (!post) {
-      return res.status(404).json({ error: "Post not found" });
+      return res.status(404).json({ message: "Post not found" });
     }
 
-    post.comments.push({ email, comment });
-
+    post.comments.push({ 
+      email, 
+      comment, 
+      username: username || email.split('@')[0] // Use provided username or default to email
+    });
     await post.save();
 
-    res.status(200).json({ message: "Comment added successfully", post });
+    res.status(201).json({ message: "Comment added successfully", comments: post.comments });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Server error" });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
@@ -214,6 +239,40 @@ router.get('/posts', async (req, res) => {
     return res.status(200).json({ data });
   } catch (error) {
     console.error("Error fetching posts:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// Get trending hashtags
+router.get('/trending-hashtags', async (req, res) => {
+  try {
+    // Get limit from query params or default to 5
+    const limit = parseInt(req.query.limit) || 5;
+    
+    // Aggregate posts to count hashtag occurrences
+    const posts = await Post.find({ hashtags: { $exists: true, $ne: [] } });
+    
+    // Count hashtag occurrences
+    const hashtagCounts = {};
+    posts.forEach(post => {
+      post.hashtags.forEach(tag => {
+        if (hashtagCounts[tag]) {
+          hashtagCounts[tag]++;
+        } else {
+          hashtagCounts[tag] = 1;
+        }
+      });
+    });
+    
+    // Convert to array and sort by count
+    const trendingHashtags = Object.keys(hashtagCounts).map(tag => ({
+      tag,
+      count: hashtagCounts[tag]
+    })).sort((a, b) => b.count - a.count).slice(0, limit);
+    
+    return res.status(200).json({ hashtags: trendingHashtags });
+  } catch (error) {
+    console.error("Error fetching trending hashtags:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 });

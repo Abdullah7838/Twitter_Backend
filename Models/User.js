@@ -1,9 +1,22 @@
 const mongoose = require('mongoose');
 
 const UserSchema = mongoose.Schema({
+    username: {
+        type: String,
+        required: true,
+        unique: true,
+        trim: true,
+        validate: {
+            validator: function(v) {
+                return !v.includes('.');
+            },
+            message: props => 'Username cannot contain dots (.)'
+        }
+    },
     email:{
         type:String,
-        required:true
+        required:true,
+        unique: true
     },
     password:{
         type:String,

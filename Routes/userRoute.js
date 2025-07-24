@@ -3,7 +3,6 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../Models/User');
 const cloudinary = require('../cloudinary');
-const { findOne } = require('../models/Posts');
 const router = express.Router();
 const JWT_SECRET = "your_jwt_secret_key";
 const Post = require("../models/Posts"); 
@@ -71,16 +70,34 @@ router.get("/get-profile", async (req, res) => {
 
 router.post('/signup', async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { username, email, password } = req.body;
 
-        let user = await User.findOne({ email });
-        if (user) {
-            return res.status(400).json({ message: "User already exists" });
+        // Validate username
+        if (!username) {
+            return res.status(400).json({ message: "Username is required" });
         }
+
+        if (username.includes('.')) {
+            return res.status(400).json({ message: "Username cannot contain dots (.)" });
+        }
+
+        // Check if username already exists
+        let existingUsername = await User.findOne({ username });
+        if (existingUsername) {
+            return res.status(400).json({ message: "Username already taken" });
+        }
+
+        // Check if email already exists
+        let existingEmail = await User.findOne({ email });
+        if (existingEmail) {
+            return res.status(400).json({ message: "Email already registered" });
+        }
+
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        user = new User({
+        const user = new User({
+            username,
             email,
             password: hashedPassword
         });
@@ -89,9 +106,12 @@ router.post('/signup', async (req, res) => {
 
         const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "1h" });
 
-        res.status(201).json({ message: "User registered successfully", token });
+        res.status(201).json({ message: "User registered successfully", token, username });
     } catch (err) {
         console.error(err);
+        if (err.name === 'ValidationError') {
+            return res.status(400).json({ message: err.message });
+        }
         res.status(500).json({ message: "Server error" });
     }
 });
@@ -113,7 +133,12 @@ router.post('/login', async (req, res) => {
 
         const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "1h" });
 
-        res.json({ message: "Login successful", token });
+        res.json({ 
+            message: "Login successful", 
+            token,
+            username: user.username,
+            email: user.email
+        });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Server error" });
@@ -190,8 +215,29 @@ router.get('/admin',async(req,res)=>{
         return res.status(200).json({ data });
 
     }catch(error){
-    console.error("Error removing follower:", error);
+    console.error("Error fetching users:", error);
     return res.status(500).json({ message: "Internal server error" });
+    }
+});
+
+// Check if username is available
+router.get('/check-username/:username', async (req, res) => {
+    try {
+        const { username } = req.params;
+        
+        if (!username) {
+            return res.status(400).json({ message: "Username is required" });
+        }
+        
+        const user = await User.findOne({ username });
+        
+        return res.status(200).json({ 
+            available: !user,
+            message: user ? "Username is already taken" : "Username is available"
+        });
+    } catch (error) {
+        console.error("Error checking username:", error);
+        return res.status(500).json({ message: "Internal server error" });
     }
 });
 
@@ -216,6 +262,73 @@ router.delete("/users/:id", async (req, res) => {
       res.status(500).json({ message: "Server error" });
     }
   });
+  
+// Delete user account by email (for user self-deletion)
+router.delete("/delete-account", async (req, res) => {
+    const { email } = req.body;
+  
+    try {
+      const user = await User.findOne({ email });
+  
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Delete all posts by this user
+      await Post.deleteMany({ email: user.email });
+      
+      // Delete the user
+      await User.findByIdAndDelete(user._id);
+      
+      res.status(200).json({ message: "Your account has been deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting account:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+// Update username
+router.post("/update-username", async (req, res) => {
+  try {
+    const { email, username } = req.body;
+
+    if (!email || !username) {
+      return res.status(400).json({ message: "Email and username are required" });
+    }
+
+    // Validate username
+    if (username.includes('.')) {
+      return res.status(400).json({ message: "Username cannot contain dots (.)" });
+    }
+
+    // Find the user
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Check if username is already taken by another user
+    const existingUser = await User.findOne({ username });
+    if (existingUser && existingUser.email !== email) {
+      return res.status(400).json({ message: "Username is already taken" });
+    }
+
+    // Update username
+    user.username = username;
+    await user.save();
+
+    // Also update username in all posts by this user
+    await Post.updateMany({ email }, { username });
+
+    return res.status(200).json({ 
+      message: "Username updated successfully", 
+      username: user.username 
+    });
+  } catch (error) {
+    console.error("Error updating username:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
   
   
 module.exports = router;
