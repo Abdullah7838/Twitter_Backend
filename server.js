@@ -1,7 +1,9 @@
 const express = require('express')
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const dotenv = require('dotenv');
 const app = express();
+dotenv.config();
 app.use(cors());
 app.use(bodyParser.json({ limit: '10mb' }));
 const db = require('./db')
@@ -14,6 +16,9 @@ app.use('/api',postRoute);
 
 const passwordRoute = require('./Routes/passwordRoute');
 app.use('/api',passwordRoute);
+
+const Admin = require('./Routes/Admin');
+app.use('/api',Admin)
 
 app.get('/', (req, res) => {
     res.send('Hello World');

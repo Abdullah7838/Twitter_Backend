@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const mongoUrl = 'mongodb://localhost:27017/Tweets'; 
-
+// mongodb://Abdullah101:Abdullah1122@cluster0-shard-00-00.gfv6k.mongodb.net:27017,cluster0-shard-00-01.gfv6k.mongodb.net:27017,cluster0-shard-00-02.gfv6k.mongodb.net:27017/?ssl=true&replicaSet=atlas-8btzqg-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster0
 mongoose.connect(mongoUrl, {
   useNewUrlParser: true, 
   useUnifiedTopology: true, 
