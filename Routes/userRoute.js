@@ -5,7 +5,7 @@ const User = require('../Models/User');
 const cloudinary = require('../cloudinary');
 const router = express.Router();
 const JWT_SECRET = "your_jwt_secret_key";
-const Post = require("../models/Posts"); 
+const Post = require("../Models/Posts"); 
 
 
 router.post("/upload-profile", async (req, res) => {
